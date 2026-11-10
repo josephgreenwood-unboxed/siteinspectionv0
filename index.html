@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Find a case – Building control</title>
+<style>
+  :root {
+    color-scheme: light;
+    --text: #0b0c0c;
+    --secondary-text: #484949;
+    --inverse-text: #ffffff;
+    --body-background: #ffffff;
+    --header-background: #0b0c0c;
+    --surface-background: #f4f8fb;
+    --surface-border: #8eb8dc;
+    --input-border: #0b0c0c;
+    --border: #cecece;
+    --link: #1a65a6;
+    --link-hover: #0f385c;
+    --focus: #ffdd00;
+    --focus-text: #0b0c0c;
+    --error: #ca3535;
+    --success: #0f7a52;
+    --button-bg: #0f7a52;
+    --button-hover: #0b5c3e;
+    --button-shadow: #083d29;
+    --secondary-bg: #f3f3f3;
+    --secondary-hover: #cecece;
+    --secondary-shadow: #858686;
+    --accordion-hover: #f3f3f3;
+    --proto-surface: #f3f3f3;
+    --proto-border: #858686;
+
+    --page-margin: 15px;
+    --main-wrapper-padding: 20px;
+    --rs-4: 15px;
+    --rs-6: 20px;
+    --rs-7: 25px;
+    --rs-8: 30px;
+
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* The service is light-only, like GOV.UK. Dark mode keeps the same palette on purpose. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: light; --body-background: #ffffff; --text: #0b0c0c; }
+  }
+  :root[data-theme="dark"] { color-scheme: light; --body-background: #ffffff; --text: #0b0c0c; }
+
+  @media (min-width: 641px) {
+    :root {
+      --page-margin: 30px;
+      --main-wrapper-padding: 40px;
+      --rs-4: 20px;
+      --rs-6: 30px;
+      --rs-7: 40px;
+      --rs-8: 50px;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--header-background); }
+  body {
+    margin: 0; min-height: 100vh;
+    background: var(--body-background); color: var(--text);
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 19px; line-height: 25px;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 10; background: var(--header-background);
+  }
+  [hidden] { display: none !important; }
+
+  .skip-link {
+    position: absolute; left: -9999px; top: 0;
+    padding: 10px 15px; background: var(--focus); color: var(--focus-text);
+    font-size: 16px; line-height: 20px; text-decoration: underline;
+  }
+  .skip-link:focus { left: 0; z-index: 20; outline: none; }
+
+  /* Generic header */
+  .generic-header { background: var(--header-background); color: var(--inverse-text); border-bottom: 1px solid transparent; }
+  .width-container { max-width: 1020px; margin: 0 auto; padding-left: var(--page-margin); padding-right: var(--page-margin); }
+  .generic-header__logo { padding: 15px 0; display: flex; align-items: center; line-height: 0; }
+  .generic-header__link {
+    display: inline-flex; align-items: center; gap: 10px;
+    color: var(--inverse-text); text-decoration: none;
+    font-size: 30px; line-height: 30px;
+  }
+  .generic-header__link svg { width: 30px; height: 30px; flex-shrink: 0; display: block; }
+  .generic-header__link { min-height: 30px; }
+  /* Trim the text box to the capital letters so the name sits optically centred next to the logo */
+  .generic-header__name { display: block; text-box: trim-both cap alphabetic; }
+  @supports not (text-box: trim-both cap alphabetic) {
+    .generic-header__name { position: relative; top: -1px; }
+  }
+  .generic-header__link:hover { box-shadow: 0 3px 0 var(--inverse-text); }
+  .generic-header__link:focus { outline: 3px solid transparent; background: var(--focus); color: var(--focus-text); box-shadow: 0 -2px var(--focus), 0 4px var(--focus-text); }
+  .generic-header__link:focus svg path { fill: var(--focus-text); }
+  @media (min-width: 641px) {
+    .generic-header__link { line-height: 40px; min-height: 40px; }
+    .generic-header__link svg { width: 40px; height: 40px; }
+  }
+
+  /* Case header (custom) */
+  .case-header { background: var(--surface-background); border-bottom: 1px solid var(--surface-border); }
+  .case-header__inner { padding-top: var(--rs-6); padding-bottom: var(--rs-6); display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }
+  .page-heading { display: flex; flex-direction: column; gap: 10px; max-width: 462px; width: 100%; }
+  .caption { margin: 0; color: var(--secondary-text); }
+  .case-header h1 { margin: 0; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--text); font-size: 16px; line-height: 20px;
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.1578em;
+  }
+  .back-link svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .back-link:hover { text-decoration-thickness: 3px; }
+  .back-link:focus { outline: 3px solid transparent; background: var(--focus); color: var(--focus-text); box-shadow: 0 -2px var(--focus), 0 4px var(--focus-text); text-decoration: none; }
+
+  /* Main */
+  main { display: block; padding-top: var(--main-wrapper-padding); padding-bottom: var(--main-wrapper-padding); }
+  main:focus { outline: none; }
+  .column { width: 100%; }
+  @media (min-width: 641px) { .column { width: calc((100% + 30px) * 2 / 3 - 30px); } }
+
+  h1 { margin: 0 0 var(--rs-6); font-size: 27px; line-height: 30px; font-weight: 700; }
+  @media (min-width: 641px) { h1 { font-size: 36px; line-height: 40px; } }
+
+  /* Notification banner (success) */
+  .banner { border: 5px solid var(--success); margin-bottom: var(--rs-8); }
+  .banner:focus { outline: 3px solid var(--focus); outline-offset: 0; }
+  .banner__header { background: var(--success); padding: 2px var(--rs-4) 5px; border-bottom: 1px solid transparent; }
+  .banner__title { margin: 0; color: var(--inverse-text); font-size: 19px; line-height: 25px; font-weight: 700; }
+  .banner__content { padding: var(--rs-4); background: var(--body-background); }
+  .banner__heading { margin: 0 0 15px; font-size: 21px; line-height: 25px; font-weight: 700; }
+  .banner__body { margin: 0; }
+  @media (min-width: 641px) { .banner__heading { font-size: 24px; line-height: 30px; } }
+
+  /* Form */
+  .form-group { margin-bottom: var(--rs-6); }
+  .form-group--error { padding-left: 15px; border-left: 5px solid var(--error); }
+  .label { display: block; margin-bottom: 5px; font-weight: 700; }
+  .hint { margin-bottom: 10px; color: var(--secondary-text); }
+  .error-message { display: block; margin: 0 0 15px; color: var(--error); font-weight: 700; }
+  .visually-hidden {
+    position: absolute !important; width: 1px !important; height: 1px !important; margin: 0 !important; padding: 0 !important;
+    overflow: hidden !important; clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important; border: 0 !important; white-space: nowrap !important;
+  }
+  .input {
+    display: block; width: 100%; height: 40px; margin: 0; padding: 5px;
+    border: 2px solid var(--input-border); border-radius: 0;
+    background: var(--body-background); color: var(--text);
+    font: inherit; font-size: 19px; line-height: 25px;
+    -webkit-appearance: none; appearance: none;
+  }
+  .input:focus { outline: 3px solid var(--focus); outline-offset: 0; box-shadow: inset 0 0 0 2px var(--input-border); }
+  .input--error { border-color: var(--error); }
+  .input--error:focus { border-color: var(--input-border); }
+  .textarea {
+    display: block; width: 100%; height: 157px; min-height: 157px; margin: 0; padding: 5px;
+    border: 2px solid var(--input-border); border-radius: 0;
+    background: var(--body-background); color: var(--text);
+    font: inherit; font-size: 19px; line-height: 1.25; resize: vertical;
+    -webkit-appearance: none; appearance: none;
+  }
+  .textarea:focus { outline: 3px solid var(--focus); outline-offset: 0; box-shadow: inset 0 0 0 2px var(--input-border); }
+  .textarea--error { border-color: var(--error); }
+  .textarea--error:focus { border-color: var(--input-border); }
+  .form-group--tight { margin-bottom: var(--rs-7); }
+
+  /* Buttons */
+  .button {
+    display: block; width: 100%; margin: 0;
+    padding: 8px 10px 7px; border: 2px solid transparent; border-radius: 0;
+    background: var(--button-bg); color: var(--inverse-text);
+    box-shadow: 0 2px 0 var(--button-shadow);
+    font: inherit; font-size: 19px; line-height: 19px; text-align: center; text-decoration: none;
+    cursor: pointer; -webkit-appearance: none; appearance: none; position: relative;
+  }
+  .button:hover { background: var(--button-hover); }
+  .button--secondary { background: var(--secondary-bg); color: var(--text); box-shadow: 0 2px 0 var(--secondary-shadow); }
+  .button--secondary:hover { background: var(--secondary-hover); }
+  .button--warning { background: #ca3535; color: var(--inverse-text); box-shadow: 0 2px 0 #651b1b; }
+  .button--warning:hover { background: #982828; }
+  .button:active { top: 2px; }
+  .button:focus { border-color: var(--focus); outline: 3px solid transparent; box-shadow: inset 0 0 0 1px var(--focus); }
+  .button:focus:not(:active):not(:hover) { border-color: var(--focus); color: var(--focus-text); background: var(--focus); box-shadow: 0 2px 0 var(--focus-text); }
+  @media (min-width: 641px) { .button { width: auto; display: inline-block; } }
+  .button-stack { display: flex; flex-direction: column; align-items: stretch; gap: var(--rs-7); }
+  @media (min-width: 641px) { .button-stack { align-items: flex-start; } }
+
+  .body { margin: 0 0 var(--rs-4); }
+  .link { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.1578em; }
+  .link:hover { color: var(--link-hover); text-decoration-thickness: 3px; }
+  .link:focus { outline: 3px solid transparent; color: var(--focus-text); background: var(--focus); box-shadow: 0 -2px var(--focus), 0 4px var(--focus-text); text-decoration: none; }
+
+  /* Case history accordion: one section per visit */
+  .history { display: flex; flex-direction: column; gap: var(--rs-7); margin-bottom: var(--rs-7); }
+  .acc-section h2 { margin: 0; font: inherit; }
+  .acc-button {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+    width: 100%; margin: 0; padding: 15px 0 var(--rs-4);
+    border: 0; border-top: 1px solid var(--border); border-radius: 0;
+    background: transparent; color: var(--text); text-align: left;
+    font: inherit; cursor: pointer; -webkit-appearance: none; appearance: none;
+  }
+  .acc-heading { font-size: 21px; line-height: 25px; font-weight: 700; }
+  @media (min-width: 641px) { .acc-heading { font-size: 24px; line-height: 30px; } }
+  .acc-summary { font-size: 19px; line-height: 25px; }
+  .acc-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--link); font-size: 16px; line-height: 20px; }
+  .acc-toggle svg { width: 20px; height: 20px; flex-shrink: 0; transform: rotate(180deg); }
+  .acc-button[aria-expanded="true"] .acc-toggle svg { transform: none; }
+  .acc-button:hover { background: var(--accordion-hover); }
+  .acc-button:hover .acc-toggle { color: var(--text); }
+  .acc-button:focus { outline: none; }
+  .acc-button:focus-visible .focus-target { background: var(--focus); color: var(--focus-text); box-shadow: 0 -2px var(--focus), 0 4px var(--focus-text); }
+  .acc-content { padding-top: 15px; padding-bottom: var(--rs-7); display: flex; flex-direction: column; gap: 20px; }
+
+  .observation { display: flex; flex-direction: column; gap: 20px; padding-top: 15px; }
+  .observation + .observation { border-top: 0; }
+  .observation__header { display: flex; flex-direction: column; gap: 10px; }
+  .observation__title { margin: 0; font-size: 19px; line-height: 25px; font-weight: 700; }
+  .observation__meta { margin: 0; }
+  .observation__notes { margin: 0; }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 10px; }
+  .thumb { width: 60px; height: 60px; display: block; padding: 0; border: 0; background: none; cursor: pointer; }
+  .thumb img { width: 60px; height: 60px; object-fit: cover; display: block; }
+  .thumb:focus { outline: 3px solid var(--focus); outline-offset: 0; box-shadow: 0 0 0 6px var(--focus-text); }
+  .reason { margin: 0; }
+  .reason-label { margin: 0 0 5px; font-weight: 700; }
+
+  /* ---------- Site inspection ---------- */
+  .site-stack { display: flex; flex-direction: column; gap: var(--rs-8); }
+  .site-stack > div { min-width: 0; }
+  .link-button {
+    display: inline; padding: 0; margin: 0; border: 0; background: none; cursor: pointer;
+    color: var(--link); font: inherit; font-size: 16px; line-height: 20px;
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.1578em;
+  }
+  .link-button:hover { color: var(--link-hover); text-decoration-thickness: 3px; }
+  .link-button:focus { outline: 3px solid transparent; color: var(--focus-text); background: var(--focus); box-shadow: 0 -2px var(--focus), 0 4px var(--focus-text); text-decoration: none; }
+  .link-text-static { font-size: 16px; line-height: 20px; color: var(--text); text-decoration: underline; text-underline-offset: 0.1578em; }
+
+  .inset { border-left: 5px solid var(--border); padding: 15px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .inset:focus { outline: 3px solid var(--focus); outline-offset: 0; }
+  .inset__text { margin: 0; }
+  .tag { display: inline-block; max-width: 160px; padding: 2px 8px 3px; border-radius: 1px; font-weight: 400; font-size: 19px; line-height: 25px; }
+  .tag--green { color: #083d29; background: #cfe4dc; }
+  .tag--grey { color: #0b0c0c; background: #cecece; }
+
+  .editing-row { display: flex; align-items: center; gap: 15px; }
+  .editing-heading { flex: 1; margin: 0; font-size: 21px; line-height: 25px; font-weight: 700; }
+  .editing-heading:focus { outline: none; }
+  @media (min-width: 641px) { .editing-heading { font-size: 24px; line-height: 30px; } }
+
+  .field-group { display: flex; flex-direction: column; }
+  .field-group--error { padding-left: 15px; border-left: 5px solid var(--error); }
+
+  .photo-list { max-width: 462px; }
+  .photo-row { display: flex; align-items: center; gap: 10px; padding: 10px 20px 10px 0; border-bottom: 1px solid var(--border); }
+  .photo-row img { width: 60px; height: 60px; object-fit: cover; display: block; flex-shrink: 0; }
+  .photo-row__name { flex: 1; min-width: 0; margin: 0; }
+
+  .fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .legend { padding: 0; margin: 0 0 10px; font-weight: 700; font-size: 19px; line-height: 25px; }
+  .cb-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+  .cb-input { position: absolute; left: 0; top: 10px; width: 28px; height: 28px; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+  .cb-box { width: 28px; height: 28px; flex-shrink: 0; border: 2px solid var(--input-border); background: var(--body-background); display: flex; align-items: center; justify-content: center; }
+  .cb-box svg { width: 24px; height: 24px; display: none; }
+  .cb-input:checked + .cb-box svg { display: block; }
+  .cb-input:hover + .cb-box { box-shadow: 0 0 0 10px var(--secondary-hover); }
+  .cb-input:focus + .cb-box { border-width: 4px; box-shadow: 0 0 0 3px var(--focus); }
+  .cb-input:focus + .cb-box svg { width: 20px; height: 20px; }
+  .cb-input:focus:hover + .cb-box { box-shadow: 0 0 0 3px var(--focus), 0 0 0 10px var(--secondary-hover); }
+  .cb-label { cursor: pointer; }
+  .conditional { border-left: 5px solid var(--border); padding: 0 0 5px 15px; }
+  .conditional .label { margin-bottom: 5px; }
+
+  .saved { padding-top: var(--rs-6); }
+  .saved__heading { margin: 0; padding-bottom: var(--rs-4); font-size: 21px; line-height: 25px; font-weight: 700; }
+  @media (min-width: 641px) { .saved__heading { font-size: 24px; line-height: 30px; } }
+  .saved__empty { margin: 5px 0 0; padding-bottom: 15px; }
+  .saved__list { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+  .acc-heading--s { font-size: 19px; line-height: 25px; }
+  @media (min-width: 641px) { .acc-heading--s { font-size: 19px; line-height: 25px; } }
+  .acc-content--obs { padding-top: 15px; padding-bottom: var(--rs-8); gap: 20px; align-items: flex-start; }
+  .acc-content--obs p { margin: 0; }
+
+  /* ---------- Review draft report ---------- */
+  .report-list { display: flex; flex-direction: column; gap: var(--rs-6); margin-bottom: var(--rs-6); }
+  .report-item__header { border-top: 1px solid var(--border); padding: 15px 0 var(--rs-4); display: flex; flex-direction: column; gap: 10px; }
+  .report-item__title { margin: 0; font-size: 21px; line-height: 25px; font-weight: 700; }
+  @media (min-width: 641px) { .report-item__title { font-size: 24px; line-height: 30px; } }
+  .report-item__meta { margin: 0; }
+  .report-item__content { padding: 15px 0 var(--rs-7); display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+  .report-item__content p { margin: 0; }
+
+  /* Warning text */
+  .warning-text { display: flex; align-items: flex-start; gap: 15px; padding: 10px 0; margin-bottom: var(--rs-6); }
+  .warning-text svg { width: 35px; height: 35px; flex-shrink: 0; display: block; }
+  .warning-text__text { margin: 0; flex: 1; min-width: 0; font-weight: 700; }
+
+  /* Prototype-only controls */
+  .proto { margin: 40px 0 0; padding: 15px; border: 2px dashed var(--proto-border); background: var(--proto-surface); font-size: 16px; line-height: 20px; }
+  .proto h2 { margin: 0 0 10px; font-size: 16px; line-height: 20px; font-weight: 700; }
+  .proto ul { margin: 0; padding-left: 20px; }
+  .proto li { margin-bottom: 5px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link" id="skip-link">Skip to main content</a>
+
+<header class="generic-header">
+  <div class="width-container">
+    <div class="generic-header__logo">
+      <a href="#" class="generic-header__link" data-go="find">
+        <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <path d="M15 20.4777C16.9313 20.4777 18.4972 22.0494 18.4974 23.9884C18.4974 25.9276 16.9314 27.5 15 27.5C13.0687 27.4999 11.5034 25.9276 11.5034 23.9884C11.5036 22.0494 13.0688 20.4778 15 20.4777Z" fill="white"/>
+          <path d="M7.24739 15.9831C9.17863 15.9832 10.744 17.5555 10.744 19.4946C10.7438 21.4336 9.17852 23.0052 7.24739 23.0054C5.31611 23.0054 3.75017 21.4337 3.75 19.4946C3.75 17.5554 5.31601 15.9831 7.24739 15.9831Z" fill="white"/>
+          <path d="M22.7534 15.9831C24.6848 15.9831 26.25 17.5555 26.25 19.4946C26.2498 21.4337 24.6846 23.0053 22.7534 23.0054C20.8221 23.0054 19.2562 21.4337 19.256 19.4946C19.256 17.5554 20.822 15.9831 22.7534 15.9831Z" fill="white"/>
+          <path d="M7.24739 6.99463C9.17854 6.9948 10.7438 8.56638 10.744 10.5054C10.744 12.4445 9.17863 14.0168 7.24739 14.0169C5.31601 14.0169 3.75 12.4446 3.75 10.5054C3.75013 8.56628 5.31609 6.99463 7.24739 6.99463Z" fill="white"/>
+          <path d="M22.7534 6.99463C24.6847 6.99469 26.2498 8.56634 26.25 10.5054C26.25 12.4445 24.6848 14.0169 22.7534 14.0169C20.822 14.0169 19.256 12.4446 19.256 10.5054C19.2562 8.5663 20.8221 6.99463 22.7534 6.99463Z" fill="white"/>
+          <path d="M15 2.5C16.9314 2.5 18.4974 4.07235 18.4974 6.01156C18.4972 7.95062 16.9313 9.5223 15 9.5223C13.0688 9.52225 11.5036 7.95059 11.5034 6.01156C11.5034 4.07238 13.0687 2.50005 15 2.5Z" fill="white"/>
+        </svg>
+        <span class="generic-header__name">Building control</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- Case header: shown on case pages only -->
+<div class="case-header" id="case-header" hidden>
+  <div class="width-container case-header__inner">
+    <a href="#" class="back-link" id="case-back">
+      <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M10.3658 2.19917L9.33333 1.16667L3.5 7.00001L9.33333 12.8333L10.3658 11.8008L5.565 7.00001L10.3658 2.19917Z" fill="currentColor"/></svg>
+      Back
+    </a>
+    <div class="page-heading">
+      <p class="caption" id="case-caption">BC-2026-004</p>
+      <h1 id="case-title" tabindex="-1">Case history</h1>
+    </div>
+  </div>
+</div>
+
+<div class="width-container">
+  <main id="main" tabindex="-1">
+    <div class="column">
+
+      <!-- FIND A CASE -->
+      <section id="view-find" aria-label="Find a case">
+        <div class="banner" id="banner" role="alert" tabindex="-1" aria-labelledby="banner-title" hidden>
+          <div class="banner__header"><h2 class="banner__title" id="banner-title">Success</h2></div>
+          <div class="banner__content">
+            <h3 class="banner__heading" id="banner-heading">Inspection report submitted for BC-2026-004</h3>
+            <p class="banner__body" id="banner-body">We’ve emailed a copy to the customer.</p>
+          </div>
+        </div>
+
+        <h1 id="find-title" tabindex="-1">Find a case</h1>
+        <form id="find-form" novalidate>
+          <div class="form-group" id="case-group">
+            <label class="label" for="case-id">Case ID</label>
+            <div class="hint" id="case-id-hint">For example, BC-2026-004</div>
+            <p class="error-message" id="case-id-error" hidden><span class="visually-hidden">Error: </span><span id="case-id-error-text"></span></p>
+            <input class="input" id="case-id" name="caseId" type="text" spellcheck="false" autocomplete="off" autocapitalize="characters" aria-describedby="case-id-hint">
+          </div>
+          <button class="button" type="submit">Find case</button>
+        </form>
+      </section>
+
+      <!-- CASE HISTORY -->
+      <section id="view-history" aria-label="Case history" hidden>
+        <div class="history" id="history-list"></div>
+        <p class="body" id="history-empty" style="margin-bottom: var(--rs-7);" hidden>This case has no previous inspections. Start an inspection to record the first visit.</p>
+        <div class="button-stack">
+          <a href="#site-inspection" class="button" role="button" id="start-inspection">Start inspection</a>
+          <a href="#unable-to-start" class="button button--secondary" role="button">Unable to start inspection</a>
+        </div>
+      </section>
+
+      <!-- SITE INSPECTION -->
+      <section id="view-site" aria-label="Site inspection" hidden>
+        <div class="site-stack">
+          <div class="inset" id="site-inset" tabindex="-1" hidden>
+            <strong class="tag tag--green" id="inset-tag">Saved</strong>
+            <p class="inset__text" id="inset-text"></p>
+            <button type="button" class="link-button" id="inset-undo">Undo<span class="visually-hidden" id="inset-undo-hidden"></span></button>
+          </div>
+
+          <div class="editing-row" id="editing-row" hidden>
+            <h2 class="editing-heading" id="editing-heading" tabindex="-1">Editing observation</h2>
+            <button type="button" class="link-button" id="cancel-edit">Cancel</button>
+          </div>
+
+          <div class="field-group" id="notes-group">
+            <label class="label" for="notes">Observations</label>
+            <p class="error-message" id="notes-error" hidden><span class="visually-hidden">Error: </span>Enter notes about what you found</p>
+            <textarea class="textarea" id="notes" rows="6"></textarea>
+          </div>
+
+          <div>
+            <button type="button" class="button button--secondary" id="take-photo">Take photo</button>
+            <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
+          </div>
+
+          <div class="photo-list" id="photo-list" hidden></div>
+
+          <div class="field-group" id="types-group">
+            <fieldset class="fieldset" id="types-fieldset">
+              <legend class="legend">Inspection type</legend>
+              <p class="error-message" id="types-error" hidden><span class="visually-hidden">Error: </span>Select at least one inspection type</p>
+              <div id="types"></div>
+            </fieldset>
+          </div>
+
+          <div id="save-row"><button type="button" class="button" id="save-obs">Save observation</button></div>
+          <div id="save-changes-row" hidden><button type="button" class="button" id="save-changes">Save changes</button></div>
+          <div id="remove-row" hidden><button type="button" class="button button--warning" id="remove-obs">Remove observation</button></div>
+
+          <div class="saved">
+            <h2 class="saved__heading" id="saved-heading">Saved observations</h2>
+            <p class="saved__empty" id="saved-empty">No observations saved yet.</p>
+            <div class="saved__list" id="saved-list"></div>
+          </div>
+
+          <div><a href="#report-preview" class="button button--secondary" role="button">Finish visit</a></div>
+        </div>
+      </section>
+
+      <!-- WHY COULD YOU NOT CARRY OUT THE INSPECTION? -->
+      <section id="view-unable" aria-label="Why could you not carry out the inspection?" hidden>
+        <form id="reason-form" novalidate>
+          <div class="form-group form-group--tight" id="reason-group">
+            <label class="label" for="reason">Reason</label>
+            <p class="error-message" id="reason-error" hidden><span class="visually-hidden">Error: </span>Enter a reason</p>
+            <textarea class="textarea" id="reason" name="reason" rows="6" spellcheck="true"></textarea>
+          </div>
+          <div class="warning-text" style="margin-bottom: var(--rs-7);">
+            <svg viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M17.5001 2.9165C9.45008 2.9165 2.91675 9.44984 2.91675 17.4998C2.91675 25.5498 9.45008 32.0832 17.5001 32.0832C25.5501 32.0832 32.0834 25.5498 32.0834 17.4998C32.0834 9.44984 25.5501 2.9165 17.5001 2.9165ZM18.9584 24.7915H16.0417V21.8748H18.9584V24.7915ZM18.9584 18.9582H16.0417V10.2082H18.9584V18.9582Z" fill="#0B0C0C"/></svg>
+            <p class="warning-text__text"><span class="visually-hidden">Warning</span> This reason will be shared with the customer</p>
+          </div>
+          <button class="button" type="submit">Record reason</button>
+        </form>
+      </section>
+
+      <!-- REVIEW DRAFT REPORT -->
+      <section id="view-report" aria-label="Review draft report" hidden>
+        <div class="report-list" id="report-list"></div>
+        <p class="body" id="report-empty" hidden>You have not saved any observations for this visit. <a href="#site-inspection" class="link">Go back to the site inspection</a> to add one.</p>
+        <div class="warning-text" id="report-warning">
+          <svg viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M17.5001 2.9165C9.45008 2.9165 2.91675 9.44984 2.91675 17.4998C2.91675 25.5498 9.45008 32.0832 17.5001 32.0832C25.5501 32.0832 32.0834 25.5498 32.0834 17.4998C32.0834 9.44984 25.5501 2.9165 17.5001 2.9165ZM18.9584 24.7915H16.0417V21.8748H18.9584V24.7915ZM18.9584 18.9582H16.0417V10.2082H18.9584V18.9582Z" fill="#0B0C0C"/></svg>
+          <p class="warning-text__text"><span class="visually-hidden">Warning</span> This report will be shared with the customer after submission</p>
+        </div>
+        <div id="report-submit-row"><button type="button" class="button" id="submit-report">Submit report</button></div>
+      </section>
+
+      <!-- NEXT SCREENS (not built yet) -->
+      <section id="view-next" aria-label="Next screen" hidden>
+        <h2 class="acc-heading" style="margin:0 0 20px;" id="next-title" tabindex="-1">Next screen</h2>
+        <p class="body" id="next-body"></p>
+        <p class="body"><a href="#site-inspection" class="link">Back to site inspection</a></p>
+      </section>
+
+
+    </div>
+  </main>
+</div>
+
+<template id="chevron-tpl">
+  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M9.99998 16.6667C6.32498 16.6667 3.33331 13.675 3.33331 10C3.33331 6.32501 6.32498 3.33334 9.99998 3.33334C13.675 3.33334 16.6666 6.32501 16.6666 10C16.6666 13.675 13.675 16.6667 9.99998 16.6667ZM9.99998 18.3333C14.6 18.3333 18.3333 14.6 18.3333 10C18.3333 5.40001 14.6 1.66668 9.99998 1.66668C5.39998 1.66668 1.66665 5.40001 1.66665 10C1.66665 14.6 5.39998 18.3333 9.99998 18.3333ZM9.99998 7.50001L13.3333 10.8333L6.66665 10.8333L9.99998 7.50001Z" fill="currentColor"/></svg>
+</template>
+
+<script>
+  (function () {
+    var PHOTO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAAAY1JREFUeAHt2TGqg1AURdFnCGjn/IepldqYEZhaNmu1+afa+OBzp+u67vHgOI5xnufTz2Nd12H77u1nkCZwnMBxAscJHCdw3LTv+/33D6bp8bf7voftu7fff/9DLcsy5nl+/H3bNtuXbz3RcQLHCRwncJzAcQLHTc6F7a0vOE7gOIHjBI4TOE7gOOfC+Na5ML71RMcJHCdwnMBxAscJHOdcGN/6guMEjhM4TuA4geMEjnMujG+dC+NbT3ScwHECxwkcJ3CcwHHOhfGtLzhO4DiB4wSOEzhO4DjnwvjWuTC+9UTHCRwncJzAcQLHCRznXBjf+oLjBI4TOE7gOIHjBI5zLoxvnQvjW090nMBxAscJHCdwnMBxzoXxrS84TuA4geMEjhM4TuA458L41rkwvvVExwkcJ3CcwHECxwkc51wY3/qC4wSOEzhO4DiB4wSOcy6Mb50L41tPdJzAcQLHCRwncJzAcc6F8a0vOE7gOIHjBI4TOE7gOOfC+Na5ML71RMcJHCdwnMBxAscJHPcDlYomnp6cFXwAAAAASUVORK5CYII=';
+
+    var CASES = {
+      'BC-2026-004': [
+        { date: '21 October 2026', open: true, observations: [
+          { title: 'Excavation for foundations', time: '10:48', photos: 1,
+            notes: 'Trench depth at rear wall measured at 750mm. Approved drawings show 1000mm because of the oak tree in the neighbouring garden. Told builder not to pour concrete until trench is deepened and re-inspected.' },
+          { title: 'Drains laid, Drains tested', time: '11:32', photos: 2,
+            notes: 'Rodding access missing at change of direction near kitchen. Builder to add access chamber before backfilling.' }
+        ]},
+        { date: '14 October 2026', observations: [
+          { title: 'Oversite', time: '10:15', photos: 2,
+            notes: 'Topsoil and vegetation cleared across the full footprint. Hardcore stored on site ready for oversite fill.' },
+          { title: 'Damp proof course', time: '10:40', photos: 0,
+            notes: 'Blockwork below DPC still in progress. Asked builder to call before the DPC is laid.' }
+        ]},
+        { date: '30 September 2026', notCarriedOut: true,
+          reason: 'Arrived at 9:15. Front gate was locked and nobody was on site. Called the site contact twice with no answer and left a voicemail asking them to rebook.' }
+      ],
+      'BC-2026-018': []
+    };
+
+    var els = {
+      find: document.getElementById('view-find'),
+      history: document.getElementById('view-history'),
+      next: document.getElementById('view-next'),
+      caseHeader: document.getElementById('case-header'),
+      caseCaption: document.getElementById('case-caption'),
+      caseTitle: document.getElementById('case-title'),
+      list: document.getElementById('history-list'),
+      empty: document.getElementById('history-empty'),
+      banner: document.getElementById('banner'),
+      form: document.getElementById('find-form'),
+      input: document.getElementById('case-id'),
+      group: document.getElementById('case-group'),
+      err: document.getElementById('case-id-error'),
+      errText: document.getElementById('case-id-error-text'),
+      nextTitle: document.getElementById('next-title'),
+      nextBody: document.getElementById('next-body'),
+      unable: document.getElementById('view-unable'),
+      site: document.getElementById('view-site'),
+      report: document.getElementById('view-report'),
+      reasonForm: document.getElementById('reason-form'),
+      reason: document.getElementById('reason'),
+      reasonGroup: document.getElementById('reason-group'),
+      reasonErr: document.getElementById('reason-error'),
+      bannerHeading: document.getElementById('banner-heading'),
+      bannerBody: document.getElementById('banner-body')
+    };
+    var chevron = document.getElementById('chevron-tpl').innerHTML;
+    var currentCase = 'BC-2026-004';
+
+    function photoText(n) { return n === 0 ? 'No photos' : n === 1 ? '1 photo' : n + ' photos'; }
+    function obsText(n) { return n === 1 ? '1 observation' : n + ' observations'; }
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    // ---------- Case history ----------
+    function renderHistory(id) {
+      var visits = CASES[id] || [];
+      els.list.innerHTML = '';
+      els.list.hidden = visits.length === 0;
+      els.empty.hidden = visits.length !== 0;
+
+      visits.forEach(function (v, i) {
+        var sid = 'visit-' + i;
+        var summary = v.notCarriedOut ? 'Inspection not carried out' : obsText(v.observations.length);
+        var content = '';
+        if (v.notCarriedOut) {
+          content = '<div class="observation"><p class="reason-label">Reason recorded</p><p class="reason">' + esc(v.reason) + '</p></div>';
+        } else {
+          content = v.observations.map(function (o, j) {
+            var thumbs = '';
+            for (var k = 0; k < o.photos; k++) {
+              thumbs += '<button type="button" class="thumb" aria-label="Photo ' + (k + 1) + ' of ' + o.photos + ', recorded at ' + o.time + '"><img src="' + PHOTO + '" alt=""></button>';
+            }
+            return '<div class="observation">' +
+              '<div class="observation__header"><h3 class="observation__title">' + esc(o.title) + '</h3>' +
+              '<p class="observation__meta">' + o.time + ' · ' + photoText(o.photos) + '</p></div>' +
+              '<p class="observation__notes">' + esc(o.notes) + '</p>' +
+              (o.photos ? '<div class="thumbs">' + thumbs + '</div>' : '') +
+              '</div>';
+          }).join('');
+        }
+        var section = document.createElement('div');
+        section.className = 'acc-section';
+        section.innerHTML =
+          '<h2><button type="button" class="acc-button" aria-expanded="' + (v.open ? 'true' : 'false') + '" aria-controls="' + sid + '">' +
+            '<span class="acc-heading"><span class="focus-target">' + esc(v.date) + '</span></span>' +
+            '<span class="acc-summary"><span class="focus-target">' + summary + '</span></span>' +
+            '<span class="acc-toggle focus-target">' + chevron + '<span class="acc-toggle-text">' + (v.open ? 'Hide' : 'Show') + '</span><span class="visually-hidden"> this section</span></span>' +
+          '</button></h2>' +
+          '<div class="acc-content" id="' + sid + '"' + (v.open ? '' : ' hidden') + '>' + content + '</div>';
+        els.list.appendChild(section);
+      });
+    }
+
+    els.list.addEventListener('click', function (e) {
+      var btn = e.target.closest('.acc-button');
+      if (!btn) return;
+      var open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      btn.querySelector('.acc-toggle-text').textContent = open ? 'Show' : 'Hide';
+      document.getElementById(btn.getAttribute('aria-controls')).hidden = open;
+    });
+
+    // ---------- Find a case ----------
+    var baseTitle = 'Find a case – Building control';
+    function normalise(raw) {
+      var s = raw.toUpperCase().replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (/^\d{4}-\d{3}$/.test(s)) s = 'BC-' + s;
+      if (/^BC\d{4}-?\d{3}$/.test(s)) s = s.replace(/^BC(\d{4})-?(\d{3})$/, 'BC-$1-$2');
+      return s;
+    }
+    function showError(message) {
+      els.errText.textContent = message;
+      els.err.hidden = false;
+      els.group.classList.add('form-group--error');
+      els.input.classList.add('input--error');
+      els.input.setAttribute('aria-describedby', 'case-id-hint case-id-error');
+      document.title = 'Error: ' + baseTitle;
+      els.input.focus();
+    }
+    function clearError() {
+      els.err.hidden = true;
+      els.group.classList.remove('form-group--error');
+      els.input.classList.remove('input--error');
+      els.input.setAttribute('aria-describedby', 'case-id-hint');
+    }
+    var submitting = false;
+    els.form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (submitting) return;
+      submitting = true; setTimeout(function () { submitting = false; }, 1000);
+      els.banner.hidden = true;
+      var raw = els.input.value.trim();
+      if (!raw) { showError('Enter a case ID'); return; }
+      var id = normalise(raw);
+      if (!/^BC-\d{4}-\d{3}$/.test(id)) { showError('Enter a case ID in the correct format, like BC-2026-004'); return; }
+      if (!(id in CASES)) { showError('No case found with that ID. Check the ID and try again'); return; }
+      clearError();
+      currentCase = id;
+      location.hash = id === 'BC-2026-018' ? 'case-history-empty' : 'case-history';
+    });
+
+    // ---------- Site inspection ----------
+    var Site = (function () {
+      var TYPES = ['Excavation for foundations', 'Foundation concrete', 'Oversite', 'Damp proof course', 'Drains laid', 'Drains tested', 'Structural elements', 'Floor and roof structure', 'Insulation and fire stopping', 'Completion', 'Other'];
+      var TICK = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M8.9999 16.2L4.7999 12L3.3999 13.4L8.9999 19L20.9999 6.99998L19.5999 5.59998L8.9999 16.2Z" fill="#0B0C0C"/></svg>';
+      var $ = function (id) { return document.getElementById(id); };
+      var s = { obs: [], editingId: null, photos: [], undo: null, nextId: 1 };
+
+      // Build checkboxes once
+      var typesEl = $('types');
+      typesEl.innerHTML = TYPES.map(function (t, i) {
+        var id = 'type-' + i;
+        var item = '<div class="cb-item"><input class="cb-input" type="checkbox" id="' + id + '" value="' + t + '"' + (t === 'Other' ? ' aria-controls="other-conditional" aria-expanded="false"' : '') + '><span class="cb-box" aria-hidden="true">' + TICK + '</span><label class="cb-label" for="' + id + '">' + t + '</label></div>';
+        if (t === 'Other') {
+          item += '<div class="conditional" id="other-conditional" hidden><div class="field-group" id="other-group"><label class="label" for="other-text">Give details</label><p class="error-message" id="other-error" hidden><span class="visually-hidden">Error: </span>Enter the other inspection type</p><input class="input" id="other-text" type="text"></div></div>';
+        }
+        return item;
+      }).join('');
+      var otherBox = $('type-' + (TYPES.length - 1));
+      otherBox.addEventListener('change', function () {
+        $('other-conditional').hidden = !otherBox.checked;
+        otherBox.setAttribute('aria-expanded', otherBox.checked ? 'true' : 'false');
+      });
+
+      function photoText(n) { return n === 0 ? 'No photos' : n === 1 ? '1 photo' : n + ' photos'; }
+      function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+      function heading(o) {
+        var first = o.types[0] === 'Other' && o.other ? o.other : o.types[0];
+        var more = o.types.length - 1;
+        return first + (more > 0 ? ' and ' + more + ' more' : '');
+      }
+      function now() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+
+      // ----- form read / write -----
+      function readForm() {
+        var types = TYPES.filter(function (t, i) { return $('type-' + i).checked; });
+        return { notes: $('notes').value.trim(), types: types, other: $('other-text').value.trim(), photos: s.photos.slice() };
+      }
+      function writeForm(d) {
+        $('notes').value = d ? d.notes : '';
+        TYPES.forEach(function (t, i) { $('type-' + i).checked = d ? d.types.indexOf(t) !== -1 : false; });
+        $('other-text').value = d ? (d.other || '') : '';
+        $('other-conditional').hidden = !otherBox.checked;
+        otherBox.setAttribute('aria-expanded', otherBox.checked ? 'true' : 'false');
+        s.photos = d ? d.photos.slice() : [];
+        clearErrors();
+        renderPhotos();
+      }
+
+      // ----- errors -----
+      function setGroupError(groupId, errId, on, describedId) {
+        $(groupId).classList.toggle('field-group--error', on);
+        $(errId).hidden = !on;
+      }
+      function clearErrors() {
+        setGroupError('notes-group', 'notes-error', false);
+        $('notes').classList.remove('textarea--error');
+        setGroupError('types-group', 'types-error', false);
+        setGroupError('other-group', 'other-error', false);
+        $('other-text').classList.remove('input--error');
+        $('notes').removeAttribute('aria-describedby');
+        $('types-fieldset').removeAttribute('aria-describedby');
+        $('other-text').removeAttribute('aria-describedby');
+      }
+      function validate(d) {
+        clearErrors();
+        var first = null;
+        if (!d.notes) {
+          setGroupError('notes-group', 'notes-error', true);
+          $('notes').classList.add('textarea--error');
+          $('notes').setAttribute('aria-describedby', 'notes-error');
+          first = first || $('notes');
+        }
+        if (!d.types.length) {
+          setGroupError('types-group', 'types-error', true);
+          $('types-fieldset').setAttribute('aria-describedby', 'types-error');
+          first = first || $('type-0');
+        } else if (d.types.indexOf('Other') !== -1 && !d.other) {
+          setGroupError('other-group', 'other-error', true);
+          $('other-text').classList.add('input--error');
+          $('other-text').setAttribute('aria-describedby', 'other-error');
+          first = first || $('other-text');
+        }
+        if (first) {
+          document.title = 'Error: Site inspection – Building control';
+          first.focus();
+          return false;
+        }
+        document.title = 'Site inspection – Building control';
+        return true;
+      }
+
+      // ----- confirmation (inset text) -----
+      function showInset(tag, colour, text, undoLabel, undoFn) {
+        var el = $('site-inset');
+        $('inset-tag').textContent = tag;
+        $('inset-tag').className = 'tag tag--' + colour;
+        $('inset-text').textContent = text;
+        $('inset-undo').hidden = !undoFn;
+        $('inset-undo-hidden').textContent = undoFn ? ' ' + undoLabel + ' ' + text : '';
+        s.undo = undoFn || null;
+        el.hidden = false;
+        window.scrollTo(0, 0);
+        el.focus();
+      }
+      function hideInset() { $('site-inset').hidden = true; s.undo = null; }
+      $('inset-undo').addEventListener('click', function () { if (s.undo) s.undo(); });
+
+      // ----- photos in the form -----
+      function renderPhotos() {
+        var list = $('photo-list');
+        list.hidden = s.photos.length === 0;
+        list.innerHTML = s.photos.map(function (src, i) {
+          return '<div class="photo-row"><img src="' + src + '" alt="Photo ' + (i + 1) + '"><p class="photo-row__name">Photo ' + (i + 1) + '</p><button type="button" class="link-button" data-remove-photo="' + i + '">Remove<span class="visually-hidden"> photo ' + (i + 1) + '</span></button></div>';
+        }).join('');
+      }
+      $('photo-list').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-remove-photo]');
+        if (!b) return;
+        s.photos.splice(Number(b.getAttribute('data-remove-photo')), 1);
+        renderPhotos();
+        $('take-photo').focus();
+      });
+      $('take-photo').addEventListener('click', function () { $('photo-input').click(); });
+      $('photo-input').addEventListener('change', function () {
+        Array.prototype.forEach.call(this.files, function (f) { s.photos.push(URL.createObjectURL(f)); });
+        this.value = '';
+        renderPhotos();
+      });
+
+      // ----- saved list -----
+      function renderSaved() {
+        var n = s.obs.length;
+        $('saved-heading').textContent = 'Saved observations' + (n ? ' (' + n + ')' : '');
+        $('saved-empty').hidden = n !== 0;
+        $('saved-list').innerHTML = s.obs.map(function (o) {
+          var sid = 'obs-' + o.id;
+          var thumbs = o.photos.map(function (src, i) {
+            return '<img src="' + src + '" alt="Photo ' + (i + 1) + ' of ' + o.photos.length + ', recorded at ' + o.time + '" style="width:60px;height:60px;object-fit:cover;display:block;">';
+          }).join('');
+          var action = s.editingId === o.id
+            ? '<span class="link-text-static">Editing</span>'
+            : '<button type="button" class="link-button" data-edit="' + o.id + '">Edit<span class="visually-hidden"> observation: ' + esc(heading(o)) + '</span></button>';
+          return '<div class="acc-section"><h3 style="margin:0;font:inherit;"><button type="button" class="acc-button" aria-expanded="' + (o.open ? 'true' : 'false') + '" aria-controls="' + sid + '" data-toggle="' + o.id + '">' +
+            '<span class="acc-heading acc-heading--s"><span class="focus-target">' + esc(heading(o)) + '</span></span>' +
+            '<span class="acc-summary"><span class="focus-target">' + o.time + ' · ' + photoText(o.photos.length) + '</span></span>' +
+            '<span class="acc-toggle focus-target">' + chevron + '<span class="acc-toggle-text">' + (o.open ? 'Hide' : 'Show') + '</span><span class="visually-hidden"> this section</span></span>' +
+            '</button></h3>' +
+            '<div class="acc-content acc-content--obs" id="' + sid + '"' + (o.open ? '' : ' hidden') + '>' +
+            '<p>' + esc(o.notes) + '</p>' +
+            (o.photos.length ? '<div class="thumbs">' + thumbs + '</div>' : '') +
+            action + '</div></div>';
+        }).join('');
+      }
+      $('saved-list').addEventListener('click', function (e) {
+        var t = e.target.closest('[data-toggle]');
+        if (t) {
+          var o = find(Number(t.getAttribute('data-toggle')));
+          o.open = !o.open; renderSaved();
+          document.querySelector('[data-toggle="' + o.id + '"]').focus();
+          return;
+        }
+        var ed = e.target.closest('[data-edit]');
+        if (ed) startEdit(Number(ed.getAttribute('data-edit')));
+      });
+      function find(id) { for (var i = 0; i < s.obs.length; i++) if (s.obs[i].id === id) return s.obs[i]; return null; }
+      function indexOf(id) { for (var i = 0; i < s.obs.length; i++) if (s.obs[i].id === id) return i; return -1; }
+
+      // ----- modes -----
+      function setEditing(id) {
+        s.editingId = id;
+        var on = id !== null;
+        $('editing-row').hidden = !on;
+        $('save-row').hidden = on;
+        $('save-changes-row').hidden = !on;
+        $('remove-row').hidden = !on;
+        renderSaved();
+      }
+      function startEdit(id) {
+        var o = find(id);
+        hideInset();
+        writeForm(o);
+        setEditing(id);
+        window.scrollTo(0, 0);
+        $('editing-heading').focus();
+      }
+
+      // ----- actions -----
+      var busy = false;
+      function guard() { if (busy) return false; busy = true; setTimeout(function () { busy = false; }, 800); return true; }
+
+      $('save-obs').addEventListener('click', function () {
+        if (!guard()) return;
+        var d = readForm();
+        if (!validate(d)) return;
+        var o = { id: s.nextId++, notes: d.notes, types: d.types, other: d.other, photos: d.photos, time: now(), open: false };
+        s.obs.unshift(o);
+        writeForm(null);
+        renderSaved();
+        showInset('Saved', 'green', heading(o), 'Undo saving', function () {
+          s.obs.splice(indexOf(o.id), 1);
+          hideInset();
+          writeForm(o);
+          renderSaved();
+          $('notes').focus();
+        });
+      });
+
+      $('save-changes').addEventListener('click', function () {
+        if (!guard()) return;
+        var d = readForm();
+        if (!validate(d)) return;
+        var o = find(s.editingId);
+        o.notes = d.notes; o.types = d.types; o.other = d.other; o.photos = d.photos;
+        writeForm(null);
+        setEditing(null);
+        showInset('Updated', 'green', heading(o), '', null);
+        if (s.returnToReport) { s.returnToReport = false; hideInset(); location.hash = 'report-preview'; }
+      });
+
+      $('cancel-edit').addEventListener('click', function () {
+        var id = s.editingId;
+        writeForm(null);
+        var o = find(id); if (o) o.open = true;
+        setEditing(null);
+        var b = document.querySelector('[data-edit="' + id + '"]');
+        if (b) b.focus();
+      });
+
+      $('remove-obs').addEventListener('click', function () {
+        if (!guard()) return;
+        var id = s.editingId, idx = indexOf(id), o = s.obs[idx];
+        s.obs.splice(idx, 1);
+        writeForm(null);
+        setEditing(null);
+        showInset('Removed', 'grey', heading(o), 'Undo removing', function () {
+          s.obs.splice(Math.min(idx, s.obs.length), 0, o);
+          renderSaved();
+          showInset('Restored', 'green', heading(o), '', null);
+        });
+      });
+
+      return {
+        getObs: function () { return s.obs.slice().reverse(); },
+        heading: heading,
+        fullTypes: function (o) { return o.types.map(function (t) { return t === 'Other' && o.other ? o.other : t; }).join(', '); },
+        photoText: photoText,
+        editFromReport: function (id) { s.returnToReport = true; location.hash = 'site-inspection'; setTimeout(function () { startEdit(id); }, 0); },
+        reset: function () { s.obs = []; s.editingId = null; s.returnToReport = false; hideInset(); writeForm(null); setEditing(null); },
+        loadDemo: function () {
+          s.obs = [
+            { id: s.nextId++, time: '12:02', open: true, photos: [PHOTO, PHOTO], types: ['Structural elements', 'Floor and roof structure', 'Other'], other: 'Materials storage',
+              notes: 'Steel beam for the kitchen opening is on site, but no structural engineer\u2019s calculations have been provided. Calculations needed before the beam is installed. Joist hangers on the first floor are the correct type. Insulation boards stored uncovered next to the skip, so asked builder to cover them.' },
+            { id: s.nextId++, time: '11:45', open: false, photos: [PHOTO, PHOTO], types: ['Damp proof course'], other: '',
+              notes: 'Existing DPC visible 150mm above ground level on rear wall. New DPC to be lapped into it at the junction.' },
+            { id: s.nextId++, time: '11:32', open: false, photos: [PHOTO, PHOTO, PHOTO], types: ['Drains laid', 'Drains tested'], other: '',
+              notes: 'Rodding access missing at change of direction near kitchen. Air test passed on new run. Builder to add access chamber before backfilling.' }
+          ];
+          s.editingId = null; hideInset(); writeForm(null); setEditing(null);
+        },
+        render: function () { renderSaved(); renderPhotos(); }
+      };
+    })();
+
+    document.getElementById('start-inspection').addEventListener('click', function () { Site.reset(); });
+
+    // ---------- Review draft report ----------
+    var Report = (function () {
+      var list = document.getElementById('report-list');
+      function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+      function render() {
+        var obs = Site.getObs(); // earliest first
+        document.getElementById('report-empty').hidden = obs.length !== 0;
+        document.getElementById('report-submit-row').hidden = obs.length === 0;
+        document.getElementById('report-warning').hidden = obs.length === 0;
+        list.hidden = obs.length === 0;
+        list.innerHTML = obs.map(function (o) {
+          var thumbs = o.photos.map(function (src, i) {
+            return '<img src="' + src + '" alt="Photo ' + (i + 1) + ' of ' + o.photos.length + ', recorded at ' + o.time + '" style="width:60px;height:60px;object-fit:cover;display:block;">';
+          }).join('');
+          return '<div class="report-item">' +
+            '<div class="report-item__header"><h2 class="report-item__title">' + esc(Site.fullTypes(o)) + '</h2>' +
+            '<p class="report-item__meta">' + o.time + '</p></div>' +
+            '<div class="report-item__content"><p>' + esc(o.notes) + '</p>' +
+            (o.photos.length ? '<div class="thumbs">' + thumbs + '</div>' : '') +
+            '<button type="button" class="link-button" data-report-edit="' + o.id + '">Edit<span class="visually-hidden"> observation: ' + esc(Site.fullTypes(o)) + '</span></button>' +
+            '</div></div>';
+        }).join('');
+      }
+      list.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-report-edit]');
+        if (b) Site.editFromReport(Number(b.getAttribute('data-report-edit')));
+      });
+      var sending = false;
+      document.getElementById('submit-report').addEventListener('click', function () {
+        if (sending) return; // prevent double click
+        sending = true; setTimeout(function () { sending = false; }, 1000);
+        var obs = Site.getObs();
+        var visits = CASES[currentCase] || (CASES[currentCase] = []);
+        visits.forEach(function (v) { v.open = false; });
+        visits.unshift({
+          date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+          open: true,
+          observations: obs.map(function (o) { return { title: Site.fullTypes(o), time: o.time, photos: o.photos.length, notes: o.notes }; })
+        });
+        Site.reset();
+        location.hash = 'report-submitted';
+      });
+      return { render: render };
+    })();
+
+    // ---------- Why could you not carry out the inspection? ----------
+    function clearReasonError() {
+      els.reasonErr.hidden = true;
+      els.reasonGroup.classList.remove('form-group--error');
+      els.reason.classList.remove('textarea--error');
+      els.reason.removeAttribute('aria-describedby');
+    }
+    var recording = false;
+    els.reasonForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (recording) return;
+      recording = true; setTimeout(function () { recording = false; }, 1000);
+      var text = els.reason.value.trim();
+      if (!text) {
+        els.reasonErr.hidden = false;
+        els.reasonGroup.classList.add('form-group--error');
+        els.reason.classList.add('textarea--error');
+        els.reason.setAttribute('aria-describedby', 'reason-error');
+        document.title = 'Error: Why could you not carry out the inspection? – Building control';
+        els.reason.focus();
+        return;
+      }
+      var visits = CASES[currentCase] || (CASES[currentCase] = []);
+      visits.forEach(function (v) { v.open = false; });
+      var today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      visits.unshift({ date: today, notCarriedOut: true, reason: text, open: true });
+      location.hash = 'reason-recorded';
+    });
+
+    function setBanner(heading, body) {
+      els.bannerHeading.textContent = heading;
+      els.bannerBody.textContent = body;
+      els.bannerBody.hidden = !body;
+    }
+
+    // ---------- Routing ----------
+    function show(view) {
+      els.find.hidden = view !== 'find';
+      els.history.hidden = view !== 'history';
+      els.next.hidden = view !== 'next';
+      els.unable.hidden = view !== 'unable';
+      els.site.hidden = view !== 'site';
+      els.report.hidden = view !== 'report';
+      els.caseHeader.hidden = view === 'find';
+    }
+    function route() {
+      var h = location.hash.replace('#', '');
+      if (h === 'main') return;
+      window.scrollTo(0, 0);
+      if (h === 'case-history' || h === 'case-history-empty') {
+        currentCase = h === 'case-history-empty' ? 'BC-2026-018' : 'BC-2026-004';
+        renderHistory(currentCase);
+        show('history');
+        els.caseCaption.textContent = currentCase;
+        els.caseTitle.textContent = 'Case history';
+        document.title = 'Case history – ' + currentCase + ' – Building control';
+        els.caseTitle.focus();
+      } else if (h === 'unable-to-start') {
+        show('unable');
+        clearReasonError();
+        els.reason.value = '';
+        els.caseCaption.textContent = currentCase;
+        els.caseTitle.textContent = 'Why could you not carry out the inspection?';
+        document.title = 'Why could you not carry out the inspection? – Building control';
+        els.caseTitle.focus();
+      } else if (h === 'site-inspection' || h === 'site-inspection-new' || h === 'site-inspection-populated') {
+        if (h === 'site-inspection-new') { Site.reset(); history.replaceState(null, '', '#site-inspection'); }
+        if (h === 'site-inspection-populated') { Site.loadDemo(); history.replaceState(null, '', '#site-inspection'); }
+        show('site');
+        els.caseCaption.textContent = currentCase;
+        els.caseTitle.textContent = 'Site inspection';
+        document.title = 'Site inspection – Building control';
+        Site.render();
+        els.caseTitle.focus();
+      } else if (h === 'report-preview') {
+        show('report');
+        Report.render();
+        els.caseCaption.textContent = currentCase;
+        els.caseTitle.textContent = 'Review draft report';
+        document.title = 'Review draft report – Building control';
+        els.caseTitle.focus();
+      } else if (false) {
+        show('next');
+        els.caseCaption.textContent = currentCase;
+        els.caseTitle.textContent = 'Review draft report';
+        els.nextTitle.textContent = 'Next screen to prototype';
+        els.nextBody.textContent = 'This is where inspectors check every observation before submitting the report. It is the next page to build.';
+        document.title = els.caseTitle.textContent + ' – Building control';
+        els.caseTitle.focus();
+      } else {
+        show('find');
+        clearError();
+        els.input.value = '';
+        document.title = baseTitle;
+        if (h === 'report-submitted') { setBanner('Inspection report submitted for ' + currentCase, 'We’ve emailed a copy to the customer.'); }
+        else if (h === 'reason-recorded') { setBanner('Reason recorded for ' + currentCase, 'We’ve emailed a copy to the customer.'); }
+        els.banner.hidden = !(h === 'report-submitted' || h === 'reason-recorded');
+        if (!els.banner.hidden) els.banner.focus();
+      }
+    }
+
+    document.getElementById('case-back').addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!els.unable.hidden || !els.site.hidden) {
+        location.hash = currentCase === 'BC-2026-018' ? 'case-history-empty' : 'case-history';
+      } else if (!els.next.hidden || !els.report.hidden) {
+        location.hash = 'site-inspection';
+      } else if (false) {
+        location.hash = currentCase === 'BC-2026-018' ? 'case-history-empty' : 'case-history';
+      } else {
+        if (location.hash) { history.pushState(null, '', location.pathname + location.search); }
+        route();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      var go = e.target.closest('[data-go="find"]');
+      if (!go) return;
+      e.preventDefault();
+      if (location.hash) { history.pushState(null, '', location.pathname + location.search); }
+      route();
+    });
+    window.addEventListener('hashchange', route);
+    window.addEventListener('popstate', route);
+    // Always open on Find a case, unless a testing shortcut is used.
+    if (location.hash && location.hash !== '#site-inspection-populated') {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    route();
+  })();
+</script>
+</body>
+</html>
