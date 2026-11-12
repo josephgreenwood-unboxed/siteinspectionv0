@@ -162,10 +162,10 @@
   .input--error { border-color: var(--error); }
   .input--error:focus { border-color: var(--input-border); }
   .textarea {
-    display: block; width: 100%; height: 157px; min-height: 157px; margin: 0; padding: 5px;
+    display: block; width: 100%; height: 157px; min-height: 157px; overflow-y: hidden; margin: 0; padding: 5px;
     border: 2px solid var(--input-border); border-radius: 0;
     background: var(--body-background); color: var(--text);
-    font: inherit; font-size: 19px; line-height: 1.25; resize: vertical;
+    font: inherit; font-size: 19px; line-height: 1.25; resize: none;
     -webkit-appearance: none; appearance: none;
   }
   .textarea:focus { outline: 3px solid var(--focus); outline-offset: 0; box-shadow: inset 0 0 0 2px var(--input-border); }
@@ -192,6 +192,26 @@
   .button:focus:not(:active):not(:hover) { border-color: var(--focus); color: var(--focus-text); background: var(--focus); box-shadow: 0 2px 0 var(--focus-text); }
   @media (min-width: 641px) { .button { width: auto; display: inline-block; } }
   .button-stack { display: flex; flex-direction: column; align-items: stretch; gap: var(--rs-7); }
+
+  /* ---------- Add cases ---------- */
+  :root { --rs-9: 40px; }
+  @media (min-width: 641px) { :root { --rs-9: 60px; } }
+  .find-stack { display: flex; flex-direction: column; gap: var(--rs-6); }
+  .find-stack .form-group { margin-bottom: 0; }
+  .button--hug { width: auto; display: inline-block; align-self: flex-start; }
+  .find-inset { margin-bottom: var(--rs-6); }
+  .cases { margin-top: var(--rs-9); display: flex; flex-direction: column; gap: var(--rs-6); }
+  @media (min-width: 641px) { .cases { width: calc((100% + 30px) * 3 / 2 - 30px); max-width: calc(100vw - 2 * var(--page-margin)); } }
+  .cases__heading { margin: 0; font-size: 21px; line-height: 25px; font-weight: 700; }
+  @media (min-width: 641px) { .cases__heading { font-size: 24px; line-height: 30px; } }
+  .cases__empty { margin: 0; }
+  .case-row { display: flex; align-items: flex-start; gap: 25px; padding: 10px 0; border-top: 1px solid var(--border); }
+  .case-row__id { flex: 1; min-width: 0; margin: 0; padding: 5px 0; font-weight: 700; }
+  .case-row__actions { display: flex; align-items: center; padding: 5px 0; flex-shrink: 0; }
+  .case-row__actions > * { font-size: 19px; line-height: 25px; }
+  .case-row__actions > :first-child { padding-right: 15px; border-right: 1px solid var(--border); }
+  .case-row__actions > :last-child { padding-left: 15px; }
+  .case-row .link-button, .case-row .link { font-size: 19px; line-height: 25px; }
   @media (min-width: 641px) { .button-stack { align-items: flex-start; } }
 
   .body { margin: 0 0 var(--rs-4); }
@@ -305,6 +325,12 @@
   .warning-text svg { width: 35px; height: 35px; flex-shrink: 0; display: block; }
   .warning-text__text { margin: 0; flex: 1; min-width: 0; font-weight: 700; }
 
+  /* Long notes, pasted links or words without spaces must wrap, never widen the page */
+  body { overflow-wrap: anywhere; word-break: normal; }
+  .column, .site-stack > div, .history, .report-list { min-width: 0; max-width: 100%; }
+  .acc-button > span, .acc-content > *, .acc-content--obs > *, .observation > *, .observation__header > *,
+  .report-item__header > *, .report-item__content > *, .inset > *, .photo-row__name { max-width: 100%; min-width: 0; }
+
   /* Prototype-only controls */
   .proto { margin: 40px 0 0; padding: 15px; border: 2px dashed var(--proto-border); background: var(--proto-surface); font-size: 16px; line-height: 20px; }
   .proto h2 { margin: 0 0 10px; font-size: 16px; line-height: 20px; font-weight: 700; }
@@ -353,8 +379,8 @@
   <main id="main" tabindex="-1">
     <div class="column">
 
-      <!-- FIND A CASE -->
-      <section id="view-find" aria-label="Find a case">
+      <!-- ADD CASES (start page) -->
+      <section id="view-find" aria-label="Add cases">
         <div class="banner" id="banner" role="alert" tabindex="-1" aria-labelledby="banner-title" hidden>
           <div class="banner__header"><h2 class="banner__title" id="banner-title">Success</h2></div>
           <div class="banner__content">
@@ -363,16 +389,30 @@
           </div>
         </div>
 
-        <h1 id="find-title" tabindex="-1">Find a case</h1>
+        <div class="inset find-inset" id="cases-inset" tabindex="-1" hidden>
+          <strong class="tag tag--green" id="cases-inset-tag">Added</strong>
+          <p class="inset__text" id="cases-inset-text"></p>
+          <button type="button" class="link-button" id="cases-inset-undo" hidden>Undo<span class="visually-hidden" id="cases-inset-undo-hidden"></span></button>
+        </div>
+
         <form id="find-form" novalidate>
-          <div class="form-group" id="case-group">
-            <label class="label" for="case-id">Case ID</label>
-            <div class="hint" id="case-id-hint">For example, BC-2026-004</div>
-            <p class="error-message" id="case-id-error" hidden><span class="visually-hidden">Error: </span><span id="case-id-error-text"></span></p>
-            <input class="input" id="case-id" name="caseId" type="text" spellcheck="false" autocomplete="off" autocapitalize="characters" aria-describedby="case-id-hint">
+          <div class="find-stack">
+            <h1 id="find-title" tabindex="-1" style="margin:0;">Add cases</h1>
+            <div class="form-group" id="case-group">
+              <label class="label" for="case-id">Case ID</label>
+              <div class="hint" id="case-id-hint">For example, BC-2026-004.</div>
+              <p class="error-message" id="case-id-error" hidden><span class="visually-hidden">Error: </span><span id="case-id-error-text"></span></p>
+              <input class="input" id="case-id" name="caseId" type="text" spellcheck="false" autocomplete="off" autocapitalize="characters" aria-describedby="case-id-hint">
+            </div>
+            <button class="button button--hug" type="submit">Add case</button>
           </div>
-          <button class="button" type="submit">Find case</button>
         </form>
+
+        <div class="cases">
+          <h2 class="cases__heading">Your cases</h2>
+          <p class="cases__empty" id="cases-empty" hidden>You have not added any cases yet.</p>
+          <div id="cases-list"></div>
+        </div>
       </section>
 
       <!-- CASE HISTORY -->
@@ -479,6 +519,58 @@
 
 <script>
   (function () {
+    // Textareas grow with the text: start at 6 rows (157px), cap at 370px or 60% of the screen (set in CSS).
+    function autoGrow(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.max(157, el.scrollHeight + 4) + 'px';
+    }
+    function autoGrowAll() { Array.prototype.forEach.call(document.querySelectorAll('.textarea'), autoGrow); }
+    // Keep the line being typed in view. As the box grows, the page scrolls with it,
+    // allowing for the on-screen keyboard (visualViewport) on phones.
+    var mirror = null;
+    function caretOffset(el) {
+      if (!mirror) {
+        mirror = document.createElement('div');
+        mirror.setAttribute('aria-hidden', 'true');
+        mirror.style.cssText = 'position:absolute;top:0;left:-9999px;visibility:hidden;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;';
+        document.body.appendChild(mirror);
+      }
+      var cs = getComputedStyle(el);
+      ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (p) { mirror.style[p] = cs[p]; });
+      mirror.style.borderStyle = 'solid';
+      mirror.style.width = el.offsetWidth + 'px';
+      mirror.textContent = el.value.slice(0, el.selectionEnd);
+      var marker = document.createElement('span');
+      marker.textContent = '\u200b';
+      mirror.appendChild(marker);
+      return { top: marker.offsetTop, height: parseFloat(cs.lineHeight) || 24 };
+    }
+    function keepCaretInView(el) {
+      if (document.activeElement !== el) return;
+      var c = caretOffset(el);
+      var rect = el.getBoundingClientRect();
+      var vv = window.visualViewport;
+      var viewTop = vv ? vv.offsetTop : 0;
+      var viewBottom = viewTop + (vv ? vv.height : window.innerHeight);
+      var margin = 40;
+      var caretTop = rect.top + c.top;
+      var caretBottom = caretTop + c.height;
+      if (caretBottom + margin > viewBottom) window.scrollBy(0, caretBottom + margin - viewBottom);
+      else if (caretTop - margin < viewTop) window.scrollBy(0, caretTop - margin - viewTop);
+    }
+    document.addEventListener('input', function (e) {
+      if (e.target.classList && e.target.classList.contains('textarea')) {
+        autoGrow(e.target);
+        keepCaretInView(e.target);
+      }
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function () {
+        var el = document.activeElement;
+        if (el && el.classList && el.classList.contains('textarea')) keepCaretInView(el);
+      });
+    }
+    window.addEventListener('resize', autoGrowAll);
     var PHOTO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAAAY1JREFUeAHt2TGqg1AURdFnCGjn/IepldqYEZhaNmu1+afa+OBzp+u67vHgOI5xnufTz2Nd12H77u1nkCZwnMBxAscJHCdw3LTv+/33D6bp8bf7voftu7fff/9DLcsy5nl+/H3bNtuXbz3RcQLHCRwncJzAcQLHTc6F7a0vOE7gOIHjBI4TOE7gOOfC+Na5ML71RMcJHCdwnMBxAscJHOdcGN/6guMEjhM4TuA4geMEjnMujG+dC+NbT3ScwHECxwkcJ3CcwHHOhfGtLzhO4DiB4wSOEzhO4DjnwvjWuTC+9UTHCRwncJzAcQLHCRznXBjf+oLjBI4TOE7gOIHjBI5zLoxvnQvjW090nMBxAscJHCdwnMBxzoXxrS84TuA4geMEjhM4TuA458L41rkwvvVExwkcJ3CcwHECxwkc51wY3/qC4wSOEzhO4DiB4wSOcy6Mb50L41tPdJzAcQLHCRwncJzAcc6F8a0vOE7gOIHjBI4TOE7gOOfC+Na5ML71RMcJHCdwnMBxAscJHPcDlYomnp6cFXwAAAAASUVORK5CYII=';
 
     var CASES = {
@@ -498,6 +590,10 @@
         { date: '30 September 2026', notCarriedOut: true,
           reason: 'Arrived at 9:15. Front gate was locked and nobody was on site. Called the site contact twice with no answer and left a voicemail asking them to rebook.' }
       ],
+      'BC-2026-005': [],
+      'BC-2026-006': [],
+      'BC-2026-007': [],
+      'BC-2026-008': [],
       'BC-2026-018': []
     };
 
@@ -584,13 +680,11 @@
       document.getElementById(btn.getAttribute('aria-controls')).hidden = open;
     });
 
-    // ---------- Find a case ----------
-    var baseTitle = 'Find a case – Building control';
+    // ---------- Add cases (start page) ----------
+    var baseTitle = 'Add cases – Building control';
     function normalise(raw) {
-      var s = raw.toUpperCase().replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-      if (/^\d{4}-\d{3}$/.test(s)) s = 'BC-' + s;
-      if (/^BC\d{4}-?\d{3}$/.test(s)) s = s.replace(/^BC(\d{4})-?(\d{3})$/, 'BC-$1-$2');
-      return s;
+      // No strict format: councils use different references. Just tidy case and spaces.
+      return raw.trim().toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-');
     }
     function showError(message) {
       els.errText.textContent = message;
@@ -607,20 +701,87 @@
       els.input.classList.remove('input--error');
       els.input.setAttribute('aria-describedby', 'case-id-hint');
     }
+
+    var CaseList = (function () {
+      var KEY = 'bc-prototype-cases';
+      var DEFAULT = ['BC-2026-004', 'BC-2026-005', 'BC-2026-006', 'BC-2026-007'];
+      var list;
+      try { var raw = localStorage.getItem(KEY); list = raw ? JSON.parse(raw) : DEFAULT.slice(); } catch (e) { list = DEFAULT.slice(); }
+      if (!Array.isArray(list)) list = DEFAULT.slice();
+      function save() { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* storage unavailable: list lasts until reload */ } }
+      var listEl = document.getElementById('cases-list');
+      var inset = document.getElementById('cases-inset');
+      var undoFn = null;
+      function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+      function render() {
+        document.getElementById('cases-empty').hidden = list.length !== 0;
+        listEl.innerHTML = list.map(function (id) {
+          return '<div class="case-row"><p class="case-row__id">' + esc(id) + '</p><div class="case-row__actions">' +
+            '<button type="button" class="link-button" data-remove-case="' + esc(id) + '">Remove<span class="visually-hidden"> ' + esc(id) + '</span></button>' +
+            '<a href="#case-history" class="link" data-view-case="' + esc(id) + '">View<span class="visually-hidden"> ' + esc(id) + '</span></a>' +
+            '</div></div>';
+        }).join('');
+      }
+      function showInset(tag, colour, text, undo) {
+        els.banner.hidden = true;
+        document.getElementById('cases-inset-tag').textContent = tag;
+        document.getElementById('cases-inset-tag').className = 'tag tag--' + colour;
+        document.getElementById('cases-inset-text').textContent = text;
+        var u = document.getElementById('cases-inset-undo');
+        u.hidden = !undo;
+        document.getElementById('cases-inset-undo-hidden').textContent = undo ? ' removing ' + text.split(' ')[0] : '';
+        undoFn = undo || null;
+        inset.hidden = false;
+        window.scrollTo(0, 0);
+        inset.focus();
+      }
+      function hideInset() { inset.hidden = true; undoFn = null; }
+      document.getElementById('cases-inset-undo').addEventListener('click', function () { if (undoFn) undoFn(); });
+
+      listEl.addEventListener('click', function (e) {
+        var r = e.target.closest('[data-remove-case]');
+        if (r) {
+          var id = r.getAttribute('data-remove-case');
+          var idx = list.indexOf(id);
+          list.splice(idx, 1); save(); render();
+          showInset('Removed', 'grey', id + ' is no longer saved on this phone.', function () {
+            list.splice(Math.min(idx, list.length), 0, id); save(); render();
+            showInset('Restored', 'green', id + ' is saved on this phone.', null);
+          });
+          return;
+        }
+        var v = e.target.closest('[data-view-case]');
+        if (v) { e.preventDefault(); currentCase = v.getAttribute('data-view-case'); hideInset(); location.hash = 'case-history'; }
+      });
+
+      return {
+        render: render,
+        hideInset: hideInset,
+        add: function (id) {
+          list.unshift(id); save(); render();
+          showInset('Added', 'green', id + ' is saved on this phone.', null);
+        },
+        has: function (id) { return list.indexOf(id) !== -1; }
+      };
+    })();
+
     var submitting = false;
     els.form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (submitting) return;
       submitting = true; setTimeout(function () { submitting = false; }, 1000);
       els.banner.hidden = true;
+      CaseList.hideInset();
       var raw = els.input.value.trim();
       if (!raw) { showError('Enter a case ID'); return; }
       var id = normalise(raw);
-      if (!/^BC-\d{4}-\d{3}$/.test(id)) { showError('Enter a case ID in the correct format, like BC-2026-004'); return; }
+      if (CaseList.has(id)) { showError(id + ' is already in your cases'); return; }
+      if (navigator.onLine === false) { showError('You need signal to add a case. Try again when you’re connected'); return; }
       if (!(id in CASES)) { showError('No case found with that ID. Check the ID and try again'); return; }
       clearError();
-      currentCase = id;
-      location.hash = id === 'BC-2026-018' ? 'case-history-empty' : 'case-history';
+      document.title = baseTitle;
+      els.input.value = '';
+      CaseList.add(id);
     });
 
     // ---------- Site inspection ----------
@@ -667,6 +828,7 @@
         $('other-conditional').hidden = !otherBox.checked;
         otherBox.setAttribute('aria-expanded', otherBox.checked ? 'true' : 'false');
         s.photos = d ? d.photos.slice() : [];
+        autoGrowAll();
         clearErrors();
         renderPhotos();
       }
@@ -983,7 +1145,7 @@
       if (h === 'main') return;
       window.scrollTo(0, 0);
       if (h === 'case-history' || h === 'case-history-empty') {
-        currentCase = h === 'case-history-empty' ? 'BC-2026-018' : 'BC-2026-004';
+        if (h === 'case-history-empty') currentCase = 'BC-2026-018';
         renderHistory(currentCase);
         show('history');
         els.caseCaption.textContent = currentCase;
@@ -1024,11 +1186,13 @@
         els.caseTitle.focus();
       } else {
         show('find');
+        CaseList.hideInset();
+        CaseList.render();
         clearError();
         els.input.value = '';
         document.title = baseTitle;
         if (h === 'report-submitted') { setBanner('Inspection report submitted for ' + currentCase, 'We’ve emailed a copy to the customer.'); }
-        else if (h === 'reason-recorded') { setBanner('Reason recorded for ' + currentCase, 'We’ve emailed a copy to the customer.'); }
+        else if (h === 'reason-recorded') { setBanner('Unsuccessful visit recorded for ' + currentCase, 'We’ve sent the reason to the customer.'); }
         els.banner.hidden = !(h === 'report-submitted' || h === 'reason-recorded');
         if (!els.banner.hidden) els.banner.focus();
       }
@@ -1056,6 +1220,7 @@
       route();
     });
     window.addEventListener('hashchange', route);
+    window.addEventListener('hashchange', function () { setTimeout(autoGrowAll, 0); });
     window.addEventListener('popstate', route);
     // Always open on Find a case, unless a testing shortcut is used.
     if (location.hash && location.hash !== '#site-inspection-populated') {
